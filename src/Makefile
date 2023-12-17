@@ -149,8 +149,8 @@ endif
 # Define raylib release directory for compiled library
 RAYLIB_RELEASE_PATH 	?= $(RAYLIB_PATH)/src
 
-ifeq ($(OS),Windows_NT)
-    ifeq ($(PLATFORM),PLATFORM_WEB)
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    ifeq ($(OS),Windows_NT)
         # Emscripten required variables
         EMSDK_PATH         ?= C:/emsdk
         EMSCRIPTEN_PATH    ?= $(EMSDK_PATH)/upstream/emscripten
@@ -158,6 +158,15 @@ ifeq ($(OS),Windows_NT)
         PYTHON_PATH         = $(EMSDK_PATH)/python/3.9.2-nuget_64bit
         NODE_PATH           = $(EMSDK_PATH)/node/14.15.5_64bit/bin
         export PATH         = $(EMSDK_PATH);$(EMSCRIPTEN_PATH);$(CLANG_PATH);$(NODE_PATH);$(PYTHON_PATH):$$(PATH)
+    else
+        EMSDK_PATH         ?= /Users/timromero/Documents/GitHub/emsdk
+        EMSCRIPTEN_PATH    ?= $(EMSDK_PATH)/upstream/emscripten
+        CLANG_PATH          = $(EMSDK_PATH)/upstream/bin
+        PYTHON_PATH         = $(EMSDK_PATH)/python/3.9.2-nuget_64bit
+        NODE_PATH           = $(EMSDK_PATH)/node/16.20.0_64bit/bin
+        NEW_PATH := $(EMSDK_PATH):$(EMSCRIPTEN_PATH):$(CLANG_PATH):$(NODE_PATH):$(PYTHON_PATH):$(PATH)
+        export PATH := $(NEW_PATH)
+#         $(info Exported PATH: $(PATH))
     endif
 endif
 
