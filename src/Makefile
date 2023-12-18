@@ -320,6 +320,8 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
     # --preload-file resources   # specify a resources folder for data compilation
     # --source-map-base          # allow debugging in browser with source map
     LDFLAGS += -s USE_GLFW=3 -s TOTAL_MEMORY=$(BUILD_WEB_HEAP_SIZE) -s FORCE_FILESYSTEM=1
+
+    LDFLAGS += -s GL_ENABLE_GET_PROC_ADDRESS=1
     
     # Build using asyncify
     ifeq ($(BUILD_WEB_ASYNCIFY),TRUE)
@@ -408,17 +410,15 @@ endif
 
 # Define source code object files required
 #------------------------------------------------------------------------------------------------
-PROJECT_SOURCE_FILES ?= \
-    raylib_game.c \
-    screen_logo.c \
-    screen_title.c \
-    screen_options.c \
-    screen_gameplay.c \
-    screen_ending.c
+PROJECT_SOURCE_FILES = $(wildcard *.c)
 
 # Define all object files from source files
-OBJS = $(patsubst %.c, %.o, $(PROJECT_SOURCE_FILES))
+OBJ_DIR = obj
+OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(PROJECT_SOURCE_FILES))
 
+# Define the output directory
+BIN_DIR = bin
+OUTPUT = $(BIN_DIR)/raylib_game
 
 # Define processes to execute
 #------------------------------------------------------------------------------------------------
@@ -438,26 +438,26 @@ all:
 
 # Project target defined by PROJECT_NAME
 $(PROJECT_NAME): $(OBJS)
-	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+	$(CC) -o $(BIN_DIR)/$(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
-%.o: %.c
+$(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
 
 run:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),WINDOWS)
+	ifeq ($(PLATFORM_OS),WINDOWS)
 		$(PROJECT_NAME)
-    endif
-    ifeq ($(PLATFORM_OS),LINUX)
+	endif
+	ifeq ($(PLATFORM_OS),LINUX)
 		./$(PROJECT_NAME)
-    endif
-    ifeq ($(PLATFORM_OS),OSX)
+	endif
+	ifeq ($(PLATFORM_OS),OSX)
 		./$(PROJECT_NAME)
-    endif
+	endif
 endif
 
 .PHONY: clean_shell_cmd clean_shell_sh
@@ -467,34 +467,24 @@ clean:	clean_shell_$(PLATFORM_SHELL)
 	@echo Cleaning done
 
 clean_shell_sh:
-ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-    ifeq ($(PLATFORM_OS),LINUX)
-		find . -type f -executable -delete
-		rm -fv *.o
-    endif
-    ifeq ($(PLATFORM_OS),OSX)
-		find . -type f -perm +ugo+x -delete
-		rm -f *.o
-    endif
+ifeq ($(PLATFORM_OS),LINUX)
+	find . -type f -executable -delete
+	rm -fv $(OBJ_DIR)/*.o $(BIN_DIR)/$(PROJECT_NAME).data $(BIN_DIR)/$(PROJECT_NAME).html $(BIN_DIR)/$(PROJECT_NAME).js $(BIN_DIR)/$(PROJECT_NAME).wasm
+endif
+ifeq ($(PLATFORM_OS),OSX)
+	find . -type f -perm +ugo+x -delete
+	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/$(PROJECT_NAME).data $(BIN_DIR)/$(PROJECT_NAME).html $(BIN_DIR)/$(PROJECT_NAME).js $(BIN_DIR)/$(PROJECT_NAME).wasm
 endif
 ifeq ($(PLATFORM),PLATFORM_RPI)
 	find . -type f -executable -delete
-	rm -fv *.o
+	rm -fv $(OBJ_DIR)/*.o
 endif
 ifeq ($(PLATFORM),PLATFORM_DRM)
 	find . -type f -executable -delete
-	rm -fv *.o
-endif
-ifeq ($(PLATFORM),PLATFORM_WEB)
-    ifeq ($(PLATFORM_OS),LINUX)
-		rm -fv *.o $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm
-    endif
-    ifeq ($(PLATFORM_OS),OSX)
-		rm -f *.o $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm
-    endif
+	rm -fv $(OBJ_DIR)/*.o
 endif
 
 # Set specific target variable
 clean_shell_cmd: SHELL=cmd
 clean_shell_cmd:
-	del *.o *.exe $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm /s
+	del *.o *.exe $(BIN_DIR)/$(PROJECT_NAME).data $(BIN_DIR)/$(PROJECT_NAME).html $(BIN_DIR)/$(PROJECT_NAME).js $(BIN_DIR)/$(PROJECT_NAME).wasm /s
